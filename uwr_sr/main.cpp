@@ -1,3 +1,5 @@
+
+
 #include <iostream>
 #include <set>
 #include <signal.h>
@@ -90,7 +92,7 @@ public:
         peers.insert(my_id);
         receiver.setsockopt(ZMQ_SUBSCRIBE, "", 0); // przyjmujemy wszyswtkie wiadomosci
 
-        int reconnect_time_ms = 1000;
+        int reconnect_time_ms = 10000;
         sender.setsockopt(ZMQ_RECONNECT_IVL_MAX, &reconnect_time_ms, sizeof(reconnect_time_ms));
 
         if(remote_id != "") {
@@ -115,7 +117,8 @@ public:
         items[0].events  = ZMQ_POLLIN; items[1].events  = ZMQ_POLLIN;
         items[0].revents = 0;          items[1].revents = 0;
 
-        cout << "Podłączono do czatu! Można wpisywać wiadomości + ENTER. CTRL+C wyłącza czat." << endl;
+        cout << "\033[1;31mPodłączono do czatu! Można wpisywać wiadomości + ENTER. CTRL+C wyłącza czat.\033[0m" << endl;
+
     }
 
     Interrupt interrupt;
@@ -132,9 +135,8 @@ public:
 
 class DChat  {
 public:
-    DChat(const int argc, char** const argv) {
-        checkArgs(argc, argv);
-        connection = new Connection("tcp://", argv[1], argv[2]);
+    DChat(string my_id, string remote_id) {
+        connection = new Connection("tcp://", my_id, remote_id);
         mainLoop();
     }
     void checkArgs(const int argc, char** const argv) throw(string)  {
@@ -181,10 +183,11 @@ private:
         while(true) {
             try {
                 if(connection->interrupt.is_interrupted()) {
-                    cout << "Wyłączanie czatu" << endl;
+                    cout << "\033[1;31mWyłączanie czatu\033[0m" << endl;
                     create_and_send_message(Message::LEAVE, "");
                     break;
                 }
+
                 if(zmq::poll(connection->items, 2, 5000) == 0) continue;
 
                 if(message_is_waiting_to_receive()) {
@@ -206,6 +209,22 @@ private:
                         case Message::LEAVE: {
                             cout << "Rozmówca '" << received_msg.src() << "' opuścił grupę" << endl;
                             connection->peers.erase(received_msg.src());
+                            /* !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                             * Tutaj powinno sie odlaczac userka, ale, przynajmniej w mojej bibliotece,
+                             * nie ma metody disconnect(). WTF? */
+/*
+                            try {
+                                connection->sender.close();
+                            } catch(std::exception) {}
+*/
+                            for(set<string>::iterator it = connection->peers.begin(); it != connection->peers.end(); ++it) {
+                                //connection->sender.connect((connection->transport_type + (*it)).c_str());
+                                cout << (*it) <<endl;
+                            }
+
+                            for(set<string>::iterator it = connection->peers.begin(); it != connection->peers.end(); ++it)
+                                cout << (*it) <<endl;
+
                             break;
                         }
 
@@ -238,7 +257,7 @@ private:
                     string message = "[" + connection->my_id + "] " + s;
                     cout << message << endl;
                 }
-            } catch(zmq::error_t& e) { std::cout << "\nOtrzymano próbę wyłączenia czatu..." << std::endl; }
+            } catch(zmq::error_t& e) { cout << "\033[1;31m\nOtrzymano próbę wyłączenia czatu...\033[0m" << endl; }
         }
     }
 
@@ -249,7 +268,10 @@ private:
 
 int main(int argc, char** argv) {
     try {
-        DChat chat(argc, argv);
+        if(argc > 2)
+            DChat chat(argv[1], argv[2]);
+        else
+            DChat chat(argv[1], "");
     } catch(string s) {
         cerr << s << endl;
         return 1;
