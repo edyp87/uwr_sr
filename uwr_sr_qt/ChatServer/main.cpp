@@ -8,5 +8,5 @@ int main(int argc, char* argv[])
 
     ChatServer server;
 	server.listen(QHostAddress::Any, port);
-	return a.exec();
+    return a.exec();
 }

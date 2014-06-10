@@ -8,8 +8,10 @@ int main(int argc, char *argv[])
 
     quint16 port = 5432;
     ChatServer server;
+    BroadcastListener listener;
 
     server.listen(QHostAddress::Any, port);
+    listener.bind(5432, QUdpSocket::ShareAddress);
 
     ChatClient client;
 	client.show();

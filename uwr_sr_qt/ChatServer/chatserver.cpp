@@ -34,7 +34,7 @@ void ChatServer::addConnection()
 
 void ChatServer::removeConnection()
 {
-	QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
+    QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
     QBuffer*    buffer = buffers.take(socket);
 
 	buffer->close();
@@ -54,7 +54,7 @@ void ChatServer::removeConnection()
 
 void ChatServer::receiveMessage()
 {
-	QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
+    QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
     QBuffer* buffer    = buffers.value(socket);
 	
 	qint64 bytes = buffer->write(socket->readAll());	

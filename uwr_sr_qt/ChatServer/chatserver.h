@@ -6,6 +6,7 @@
 #include <QHash>
 #include <QBuffer>
 #include <QTcpSocket>
+#include <QUdpSocket>
 #include <list>
 #include <QDebug>
 
@@ -13,11 +14,8 @@ class Peers {
     std::list<QHostAddress> peerList;
 public:
     bool isPeer(QHostAddress peerAddress) {
-        for(std::list<QHostAddress>::iterator it = peerList.begin(); it != peerList.end(); ++it)
-            if(*it == peerAddress)
-                return true;
-            else
-                return false;
+        foreach(const QHostAddress & peer, peerList )
+            return isIpEqual(peer, peerAddress);
     }
     void add(QHostAddress peerAddress) {
          qDebug() << "Dodano " << peerAddress.toString().toLatin1() << "\n";
@@ -33,6 +31,10 @@ public:
             }
             else
                 return false;
+    }
+
+    bool isIpEqual(QHostAddress addrFirst, QHostAddress addrSecond) {
+        return addrFirst == addrSecond ? true : false;
     }
 
 };
@@ -56,6 +58,20 @@ private:
     QHash<QTcpSocket*, QBuffer*> buffers;
 };
 
+
+class BroadcastListener : public QUdpSocket {
+    Q_OBJECT
+
+private slots:
+    void sendResponse() {
+        qDebug() << " BroadcastListener::sendResponse()\n";
+    }
+
+public:
+    BroadcastListener(QObject * parent = 0) : QUdpSocket(parent) {
+        connect(this, SIGNAL(readyRead()), this, SLOT(sendResponse()));
+    }
+};
 
 
 #endif // CHATSERVER_H
