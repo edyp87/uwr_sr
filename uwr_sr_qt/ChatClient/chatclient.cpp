@@ -2,7 +2,7 @@
 
 static const quint16 defaultPort = 5432;
 
-ChatClient::ChatClient(QWidget* parent, Qt::WFlags flags)
+ChatClient::ChatClient(QWidget* parent, Qt::WindowFlags flags)
 : QWidget(parent, flags)
 {
     QVBoxLayout* mainSpace      = new QVBoxLayout(this);

@@ -19,7 +19,9 @@ void ChatServer::addConnection()
     buffers.insert(newConnection, buffer);
 
     connect(newConnection, SIGNAL(disconnected()), SLOT(removeConnection()));
-    connect(newConnection, SIGNAL(readyRead()),	SLOT(receiveMessage()));
+    connect(newConnection, SIGNAL(readyRead()),	   SLOT(receiveMessage()));
+
+    peerList.add(newConnection->peerAddress());
 
     foreach (QTcpSocket* connection, connectionList)
     {

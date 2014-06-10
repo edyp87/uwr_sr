@@ -20,7 +20,7 @@ class ChatClient : public QWidget
 	Q_OBJECT
 
 public:
-    ChatClient(QWidget* parent = 0, Qt::WFlags flags = 0);
+    ChatClient(QWidget* parent = 0, Qt::WindowFlags flags = 0);
     ~ChatClient();
 
 private slots:
