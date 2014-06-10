@@ -14,13 +14,13 @@
 #include <QSpinBox>
 #include <QErrorMessage>
 #include <QHostAddress>
+#include "../ChatServer/chatserver.h"
 
-class ChatClient : public QWidget
-{
+class ChatClient : public QWidget {
 	Q_OBJECT
 
 public:
-    ChatClient(QWidget* parent = 0, Qt::WindowFlags flags = 0);
+    ChatClient(QSharedPointer<Peers> peersPtr, QWidget* parent = 0, Qt::WindowFlags flags = 0);
     ~ChatClient();
 
 private slots:
@@ -32,6 +32,7 @@ private slots:
 
 private:
 	
+
     QBuffer*		socketBuffer;
     QTcpSocket*		socketHandle;
     QSpinBox*		widgetPort;
@@ -39,12 +40,16 @@ private:
     QLineEdit*		widgetServer;
     QLineEdit*		widgetMessage;
     QTextEdit*		widgetChat;
+    QPushButton*	widgetSearch;
     QPushButton*	widgetConn;
     QPushButton*	widgetSend;
     QLabel*         widgetLabel;
     QVBoxLayout*    mainSpace;
     QGridLayout*    topSpace;
     QHBoxLayout*    bottomSpace;
+
+    BroadcastHandler* broadcast;
+    QSharedPointer<Peers> peers;
 };
 
 #endif // ChatClient_H

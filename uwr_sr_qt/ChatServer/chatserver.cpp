@@ -1,16 +1,14 @@
 #include "chatserver.h"
 
-ChatServer::ChatServer(QObject* parent) : QTcpServer(parent)
-{
+ChatServer::ChatServer(QSharedPointer<Peers> peersPtr, QObject* parent)
+    : QTcpServer(parent), peers(peersPtr) {
 	connect(this, SIGNAL(newConnection()), this, SLOT(addConnection()));
 }
 
-ChatServer::~ChatServer()
-{
+ChatServer::~ChatServer() {
 }
 
-void ChatServer::addConnection()
-{
+void ChatServer::addConnection() {
     QTcpSocket* newConnection = nextPendingConnection();
     connectionList.append(newConnection);
 
@@ -21,10 +19,9 @@ void ChatServer::addConnection()
     connect(newConnection, SIGNAL(disconnected()), SLOT(removeConnection()));
     connect(newConnection, SIGNAL(readyRead()),	   SLOT(receiveMessage()));
 
-    peerList.add(newConnection->peerAddress());
+    peers->add(newConnection->peerAddress());
 
-    foreach (QTcpSocket* connection, connectionList)
-    {
+    foreach (QTcpSocket* connection, connectionList) {
         connection->write("Utworzono polaczenie... -- "
                               + newConnection->peerAddress().toString().toLatin1()
                               + "\n"
@@ -32,8 +29,7 @@ void ChatServer::addConnection()
     }
 }
 
-void ChatServer::removeConnection()
-{
+void ChatServer::removeConnection() {
     QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
     QBuffer*    buffer = buffers.take(socket);
 
@@ -42,9 +38,8 @@ void ChatServer::removeConnection()
 
     connectionList.removeAll(socket);
 	socket->deleteLater();
-
-    foreach (QTcpSocket* connection, connectionList)
-    {
+    peers->remove(socket->peerAddress());
+    foreach (QTcpSocket* connection, connectionList) {
         connection->write("Zakonczono polaczenie... -- "
                               + socket->peerAddress().toString().toLatin1()
                               + "\n"
@@ -52,20 +47,88 @@ void ChatServer::removeConnection()
     }
 }
 
-void ChatServer::receiveMessage()
-{
+void ChatServer::receiveMessage() {
     QTcpSocket* socket = static_cast<QTcpSocket*>(sender());
     QBuffer* buffer    = buffers.value(socket);
 	
 	qint64 bytes = buffer->write(socket->readAll());	
 	buffer->seek(buffer->pos() - bytes);
 
-	while (buffer->canReadLine())
-	{
+    while (buffer->canReadLine()) {
 		QByteArray line = buffer->readLine();
-        foreach (QTcpSocket* connection, connectionList)
-		{
+        foreach (QTcpSocket* connection, connectionList) {
 			connection->write(line);
 		}
 	}
+}
+
+//------------------------------------------------
+
+BroadcastHandler::BroadcastHandler(QSharedPointer<Peers> peersPtr,
+                                   QObject * parent)
+    : QUdpSocket(parent), peers(peersPtr) {
+    this->bind(5432, QUdpSocket::ShareAddress);
+    connect(this, SIGNAL(readyRead()), this, SLOT(receivedBroadcast()));
+}
+
+void BroadcastHandler::sendResponse(QByteArray receivedMsg) {
+    if(receivedMsg == "1_ImLookingForSomeFun") {
+        qDebug() << "Somebody is looking company :)";
+        peers->debugAll();
+    }
+    else if(receivedMsg == "2_ServerIsDown") {
+        qDebug() << "Somebody has lost his company :(";
+        sendOwnCandidature();
+    }
+}
+
+void BroadcastHandler::sendOwnCandidature() {
+    QByteArray message = "MeMeMeMeeee!!!";
+    this->writeDatagram(message.data(), message.size(), QHostAddress::Broadcast, 5432);
+}
+
+void BroadcastHandler::receivedBroadcast() {
+    QByteArray message;
+    message.resize(this->pendingDatagramSize());
+    this->readDatagram(message.data(), message.size());
+    qDebug() << "RECEIVED MSG: " << message.data();
+    sendResponse(message);
+}
+
+void BroadcastHandler::sendAttachRequest() {
+    QByteArray message = "1_ImLookingForSomeFun";
+    this->writeDatagram(message.data(), message.size(), QHostAddress::Broadcast, 5432);
+}
+
+//------------------------------------------------
+
+bool Peers::isPeer(QHostAddress peerAddress) {
+    foreach(const QHostAddress & peer, peerList)
+        if(isIpEqual(peer, peerAddress))
+            return true;
+    return false;
+}
+void Peers::add(QHostAddress peerAddress) {
+     qDebug() << "Dodano " << peerAddress.toString().toLatin1() << "\n";
+     peerList.push_back(peerAddress);
+}
+
+bool Peers::remove(QHostAddress peerAddress) {
+    for(std::list<QHostAddress>::iterator it = peerList.begin(); it != peerList.end(); ++it)
+        if(*it == peerAddress) {
+            peerList.erase(it);
+            qDebug() << "Usunieto " << peerAddress.toString().toLatin1() << "\n";
+            return true;
+        }
+    return false;
+}
+
+bool Peers::isIpEqual(QHostAddress addrFirst, QHostAddress addrSecond) {
+    return addrFirst == addrSecond ? true : false;
+}
+
+void Peers::debugAll() {
+    qDebug() << "Elementy kontenera Peers:" << endl;
+    foreach(const QHostAddress & peer, peerList)
+        qDebug() << " -- " << peer.toString().toLatin1();
 }

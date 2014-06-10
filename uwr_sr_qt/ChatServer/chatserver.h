@@ -9,43 +9,15 @@
 #include <QUdpSocket>
 #include <list>
 #include <QDebug>
+#include <QSharedPointer>
 
-class Peers {
-    std::list<QHostAddress> peerList;
+class Peers;
+
+class ChatServer : public QTcpServer {
+    Q_OBJECT
+
 public:
-    bool isPeer(QHostAddress peerAddress) {
-        foreach(const QHostAddress & peer, peerList )
-            return isIpEqual(peer, peerAddress);
-    }
-    void add(QHostAddress peerAddress) {
-         qDebug() << "Dodano " << peerAddress.toString().toLatin1() << "\n";
-         peerList.push_back(peerAddress);
-    }
-
-    bool remove(QHostAddress peerAddress) {
-        for(std::list<QHostAddress>::iterator it = peerList.begin(); it != peerList.end(); ++it)
-            if(*it == peerAddress) {
-                peerList.erase(it);
-                qDebug() << "Usunieto " << peerAddress.toString().toLatin1() << "\n";
-                return true;
-            }
-            else
-                return false;
-    }
-
-    bool isIpEqual(QHostAddress addrFirst, QHostAddress addrSecond) {
-        return addrFirst == addrSecond ? true : false;
-    }
-
-};
-
-class ChatServer : public QTcpServer
-{
-	Q_OBJECT
-
-    Peers peerList;
-public:
-    ChatServer(QObject* parent = 0);
+    ChatServer(QSharedPointer<Peers> peersPtr, QObject* parent = 0);
     ~ChatServer();
 
 private slots:
@@ -56,22 +28,42 @@ private slots:
 private:
     QList<QTcpSocket*> connectionList;
     QHash<QTcpSocket*, QBuffer*> buffers;
+    QSharedPointer<Peers> peers;
 };
 
 
-class BroadcastListener : public QUdpSocket {
+//---------------------------------------------------
+
+class BroadcastHandler : public QUdpSocket {
     Q_OBJECT
 
-private slots:
-    void sendResponse() {
-        qDebug() << " BroadcastListener::sendResponse()\n";
-    }
-
 public:
-    BroadcastListener(QObject * parent = 0) : QUdpSocket(parent) {
-        connect(this, SIGNAL(readyRead()), this, SLOT(sendResponse()));
-    }
+    BroadcastHandler(QSharedPointer<Peers> peersPtr, QObject * parent = 0);
+
+public slots:
+    void sendAttachRequest();
+
+private slots:
+    void receivedBroadcast();
+
+private:
+    void sendResponse(QByteArray receivedMsg);
+    void sendOwnCandidature();
+    QSharedPointer<Peers> peers;
 };
 
+
+//---------------------------------------------------
+
+class Peers {
+    std::list<QHostAddress> peerList;
+
+public:
+    bool isPeer(QHostAddress peerAddress);
+    void add(QHostAddress peerAddress);
+    bool remove(QHostAddress peerAddress);
+    bool isIpEqual(QHostAddress addrFirst, QHostAddress addrSecond);
+    void debugAll();
+};
 
 #endif // CHATSERVER_H
