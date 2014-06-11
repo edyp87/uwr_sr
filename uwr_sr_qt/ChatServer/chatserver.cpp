@@ -74,11 +74,20 @@ BroadcastHandler::BroadcastHandler(QSharedPointer<Peers> peersPtr,
 void BroadcastHandler::sendResponse(QByteArray receivedMsg) {
     if(receivedMsg == "1_ImLookingForSomeFun") {
         qDebug() << "Somebody is looking company :)";
+
+        if(serverAddress != QHostAddress("255.255.255.255")) {
+            QByteArray newMessage(serverAddress.toString().toLatin1());
+            this->writeDatagram(newMessage.data(), newMessage.size(), QHostAddress::Broadcast, 5432);
+        }
+
         peers->debugAll();
     }
     else if(receivedMsg == "2_ServerIsDown") {
         qDebug() << "Somebody has lost his company :(";
         sendOwnCandidature();
+    } else {
+         if(serverAddress == QHostAddress("255.255.255.255"))
+            emit serverOffer(QHostAddress(receivedMsg.data()));
     }
 }
 
@@ -99,6 +108,17 @@ void BroadcastHandler::sendAttachRequest() {
     QByteArray message = "1_ImLookingForSomeFun";
     this->writeDatagram(message.data(), message.size(), QHostAddress::Broadcast, 5432);
 }
+
+void BroadcastHandler::setServerAddress(QHostAddress serverAddr) {
+    qDebug() << "SET SERVER IN BROADCAST" << serverAddr.toString().toLatin1();
+    serverAddress = serverAddr;
+}
+
+void BroadcastHandler::resetServerAddress() {
+    qDebug() << "RESET SERVER IN BROADCAST";
+    serverAddress = QHostAddress("255.255.255.255");
+}
+
 
 //------------------------------------------------
 
@@ -128,7 +148,8 @@ bool Peers::isIpEqual(QHostAddress addrFirst, QHostAddress addrSecond) {
 }
 
 void Peers::debugAll() {
-    qDebug() << "Elementy kontenera Peers:" << endl;
+    qDebug() << "\nElementy kontenera Peers:";
     foreach(const QHostAddress & peer, peerList)
         qDebug() << " -- " << peer.toString().toLatin1();
 }
+

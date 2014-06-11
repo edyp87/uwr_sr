@@ -5,7 +5,7 @@ static const quint16 defaultPort = 5432;
 ChatClient::ChatClient(QSharedPointer<Peers> peersPtr,
                        QWidget* parent,
                        Qt::WindowFlags flags)
-    : QWidget(parent, flags), peers(peersPtr) {
+    : QWidget(parent, flags), peers(peersPtr), wasSearchClicked(false) {
     QVBoxLayout* mainSpace      = new QVBoxLayout(this);
     QGridLayout* topSpace       = new QGridLayout;
     QHBoxLayout* bottomSpace	= new QHBoxLayout;
@@ -54,6 +54,8 @@ ChatClient::ChatClient(QSharedPointer<Peers> peersPtr,
     connect(widgetSend, SIGNAL(clicked()), SLOT(sendMessage()));
     connect(widgetConn, SIGNAL(clicked()), SLOT(toggleConnection()));
     connect(widgetSearch, SIGNAL(clicked()), broadcast, SLOT(sendAttachRequest()));
+    connect(widgetSearch, SIGNAL(clicked()), SLOT(setSearchFlag()));
+    connect(broadcast, SIGNAL(serverOffer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
 
     connect(socketHandle, SIGNAL(connected()), SLOT(setConnected()));
     connect(socketHandle, SIGNAL(disconnected()), SLOT(setDisconnected()));
@@ -75,6 +77,8 @@ void ChatClient::setConnected() {
     widgetChat  ->clear();
     widgetSend  ->setEnabled(true);
     widgetConn  ->setText("Rozlacz");
+    widgetSearch->setEnabled(false);
+    broadcast->setServerAddress(QHostAddress(socketHandle->peerName()));
 }
 
 void ChatClient::setDisconnected() {
@@ -85,12 +89,16 @@ void ChatClient::setDisconnected() {
     widgetChat  ->setEnabled(false);
     widgetSend  ->setEnabled(false);
     widgetConn  ->setText("Polacz");
+     widgetSearch->setEnabled(true);
+     broadcast->resetServerAddress();
 }
 
 void ChatClient::toggleConnection() {
+
     if (socketHandle->state() == QAbstractSocket::UnconnectedState) {
         socketHandle->connectToHost(widgetServer->text(), widgetPort->value());
-	}
+        wasSearchClicked = false;
+    }
     else {
         socketHandle->disconnectFromHost();
 	}
@@ -108,4 +116,16 @@ void ChatClient::receiveMessage() {
         QString line = socketBuffer->readLine();
         widgetChat->append(line.simplified());
     }
+}
+
+
+void ChatClient::receiveServerOffer(QHostAddress serverAddress) {
+    if(wasSearchClicked) {
+        widgetServer->setText(serverAddress.toString());
+        toggleConnection();
+    }
+}
+
+void ChatClient::setSearchFlag() {
+    wasSearchClicked = true;
 }

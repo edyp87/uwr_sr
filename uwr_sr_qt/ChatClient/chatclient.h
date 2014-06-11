@@ -29,6 +29,8 @@ private slots:
 	void toggleConnection();
 	void sendMessage();
 	void receiveMessage();
+    void receiveServerOffer(QHostAddress serverAddress);
+    void setSearchFlag();
 
 private:
 	
@@ -50,6 +52,7 @@ private:
 
     BroadcastHandler* broadcast;
     QSharedPointer<Peers> peers;
+    bool            wasSearchClicked;
 };
 
 #endif // ChatClient_H

@@ -39,6 +39,8 @@ class BroadcastHandler : public QUdpSocket {
 
 public:
     BroadcastHandler(QSharedPointer<Peers> peersPtr, QObject * parent = 0);
+    void setServerAddress(QHostAddress serverAddr);
+    void resetServerAddress();
 
 public slots:
     void sendAttachRequest();
@@ -50,6 +52,10 @@ private:
     void sendResponse(QByteArray receivedMsg);
     void sendOwnCandidature();
     QSharedPointer<Peers> peers;
+    QHostAddress serverAddress;
+
+signals:
+    void serverOffer(QHostAddress serverAddress);
 };
 
 
