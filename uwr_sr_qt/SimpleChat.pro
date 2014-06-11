@@ -1,2 +1,2 @@
 TEMPLATE = subdirs
-SUBDIRS += ChatClient ChatServer
+SUBDIRS += ChatClient
