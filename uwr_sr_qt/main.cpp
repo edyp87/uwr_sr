@@ -7,12 +7,10 @@ int main(int argc, char *argv[]) {
 
     quint16 port = 5432;
 
-    QSharedPointer<Peers> peersPtr(new Peers);
-
-    ChatServer server(peersPtr);
+    ChatServer server;
     server.listen(QHostAddress::Any, port);
 
-    ChatClient client(peersPtr);
+    ChatClient client;
     client.show();
 
 	return a.exec();

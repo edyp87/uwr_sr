@@ -1,7 +1,7 @@
 #include "chatserver.h"
 
-ChatServer::ChatServer(QSharedPointer<Peers> peersPtr, QObject* parent)
-    : QTcpServer(parent), peers(peersPtr) {
+ChatServer::ChatServer(QObject* parent)
+    : QTcpServer(parent) {
 	connect(this, SIGNAL(newConnection()), this, SLOT(addConnection()));
 }
 
@@ -19,8 +19,6 @@ void ChatServer::addConnection() {
     connect(newConnection, SIGNAL(disconnected()), SLOT(removeConnection()));
     connect(newConnection, SIGNAL(readyRead()),	   SLOT(receiveMessage()));
 
-    peers->add(newConnection->peerAddress());
-
     foreach (QTcpSocket* connection, connectionList) {
         connection->write("Utworzono polaczenie... -- "
                               + newConnection->peerAddress().toString().toLatin1()
@@ -37,8 +35,7 @@ void ChatServer::removeConnection() {
 	buffer->deleteLater();
 
     connectionList.removeAll(socket);
-	socket->deleteLater();
-    peers->remove(socket->peerAddress());
+    socket->deleteLater();
     foreach (QTcpSocket* connection, connectionList) {
         connection->write("Zakonczono polaczenie... -- "
                               + socket->peerAddress().toString().toLatin1()
@@ -57,9 +54,9 @@ void ChatServer::receiveMessage() {
     while (buffer->canReadLine()) {
 		QByteArray line = buffer->readLine();
 
-        if(line == "KEEP")
+        if(line == "KEEP\n")
             foreach (QTcpSocket* connection, connectionList) {
-                connection->write("ALIVE");
+                connection->write("ALIVE\n");
             }
         else
             foreach (QTcpSocket* connection, connectionList) {
@@ -70,9 +67,8 @@ void ChatServer::receiveMessage() {
 
 //------------------------------------------------
 
-BroadcastHandler::BroadcastHandler(QSharedPointer<Peers> peersPtr,
-                                   QObject * parent)
-    : QUdpSocket(parent), peers(peersPtr) {
+BroadcastHandler::BroadcastHandler(QObject * parent)
+    : QUdpSocket(parent) {
     this->bind(5432, QUdpSocket::ShareAddress);
     connect(this, SIGNAL(readyRead()), this, SLOT(receivedBroadcast()));
 }
@@ -85,8 +81,6 @@ void BroadcastHandler::sendResponse(QByteArray receivedMsg) {
             QByteArray newMessage(serverAddress.toString().toLatin1());
             this->writeDatagram(newMessage.data(), newMessage.size(), QHostAddress::Broadcast, 5432);
         }
-
-        peers->debugAll();
     }
     else if(receivedMsg == "2_ServerIsDown") {
         qDebug() << "Somebody has lost his company :(";
@@ -124,38 +118,3 @@ void BroadcastHandler::resetServerAddress() {
     qDebug() << "RESET SERVER IN BROADCAST";
     serverAddress = QHostAddress("255.255.255.255");
 }
-
-
-//------------------------------------------------
-
-bool Peers::isPeer(QHostAddress peerAddress) {
-    foreach(const QHostAddress & peer, peerList)
-        if(isIpEqual(peer, peerAddress))
-            return true;
-    return false;
-}
-void Peers::add(QHostAddress peerAddress) {
-     qDebug() << "Dodano " << peerAddress.toString().toLatin1() << "\n";
-     peerList.push_back(peerAddress);
-}
-
-bool Peers::remove(QHostAddress peerAddress) {
-    for(std::list<QHostAddress>::iterator it = peerList.begin(); it != peerList.end(); ++it)
-        if(*it == peerAddress) {
-            peerList.erase(it);
-            qDebug() << "Usunieto " << peerAddress.toString().toLatin1() << "\n";
-            return true;
-        }
-    return false;
-}
-
-bool Peers::isIpEqual(QHostAddress addrFirst, QHostAddress addrSecond) {
-    return addrFirst == addrSecond ? true : false;
-}
-
-void Peers::debugAll() {
-    qDebug() << "\nElementy kontenera Peers:";
-    foreach(const QHostAddress & peer, peerList)
-        qDebug() << " -- " << peer.toString().toLatin1();
-}
-

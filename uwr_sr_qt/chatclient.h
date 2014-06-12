@@ -22,7 +22,7 @@ class ChatClient : public QWidget {
 	Q_OBJECT
 
 public:
-    ChatClient(QSharedPointer<Peers> peersPtr, QWidget* parent = 0, Qt::WindowFlags flags = 0);
+    ChatClient(QWidget* parent = 0, Qt::WindowFlags flags = 0);
     ~ChatClient();
 
 private slots:
@@ -55,7 +55,6 @@ private:
     QHBoxLayout*    bottomSpace;
 
     BroadcastHandler* broadcast;
-    QSharedPointer<Peers> peers;
     QTimer          timer;
     qint8           keepAlives;
     bool            receivedKeepAlive;

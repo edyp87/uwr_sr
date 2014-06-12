@@ -2,10 +2,9 @@
 
 static const quint16 defaultPort = 5432;
 
-ChatClient::ChatClient(QSharedPointer<Peers> peersPtr,
-                       QWidget* parent,
+ChatClient::ChatClient(QWidget* parent,
                        Qt::WindowFlags flags)
-    : QWidget(parent, flags), peers(peersPtr), wasSearchClicked(false) {
+    : QWidget(parent, flags), wasSearchClicked(false) {
     QVBoxLayout* mainSpace      = new QVBoxLayout(this);
     QGridLayout* topSpace       = new QGridLayout;
     QHBoxLayout* bottomSpace	= new QHBoxLayout;
@@ -49,7 +48,7 @@ ChatClient::ChatClient(QSharedPointer<Peers> peersPtr,
     socketHandle = new QTcpSocket(this);
     socketHandle->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
     socketBuffer->open(QIODevice::ReadWrite);
-    broadcast = new BroadcastHandler(peers);
+    broadcast = new BroadcastHandler();
 
     connect(widgetMessage, SIGNAL(returnPressed()), SLOT(sendMessage()));
     connect(widgetSend, SIGNAL(clicked()), SLOT(sendMessage()));
