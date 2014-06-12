@@ -68,12 +68,13 @@ void ChatServer::receiveMessage() {
 //------------------------------------------------
 
 BroadcastHandler::BroadcastHandler(QObject * parent)
-    : QUdpSocket(parent) {
+    : QUdpSocket(parent), isServerElecting(false) {
     this->bind(5432, QUdpSocket::ShareAddress);
     connect(this, SIGNAL(readyRead()), this, SLOT(receivedBroadcast()));
+    connect(&electingServerTimer, SIGNAL(timeout()), this, SLOT(setNewServer()));
 }
 
-void BroadcastHandler::sendResponse(QByteArray receivedMsg) {
+void BroadcastHandler::sendResponse(QByteArray receivedMsg, QHostAddress peerAddress) {
     if(receivedMsg == "1_ImLookingForSomeFun") {
         qDebug() << "Somebody is looking company :)";
 
@@ -84,28 +85,37 @@ void BroadcastHandler::sendResponse(QByteArray receivedMsg) {
     }
     else if(receivedMsg == "2_ServerIsDown") {
         qDebug() << "Somebody has lost his company :(";
-        sendOwnCandidature();
+        electNewServer();
+    } else if(receivedMsg == "3_MeMeMeMeeee!!!") {
+        qDebug() << "New Server offer from " << peerAddress;
+        serverCandidates->insert(peerAddress.toString());
+        qDebug() << "Elements in serverCandidates: ";
+        foreach(const QString  host, *serverCandidates)
+            qDebug() << " -- " << host;
+
     } else {
          if(serverAddress == QHostAddress("255.255.255.255"))
             emit serverOffer(QHostAddress(receivedMsg.data()));
     }
 }
 
-void BroadcastHandler::sendOwnCandidature() {
-    QByteArray message = "MeMeMeMeeee!!!";
-    this->writeDatagram(message.data(), message.size(), QHostAddress::Broadcast, 5432);
-}
-
 void BroadcastHandler::receivedBroadcast() {
     QByteArray message;
     message.resize(this->pendingDatagramSize());
-    this->readDatagram(message.data(), message.size());
-    qDebug() << "RECEIVED MSG: " << message.data();
-    sendResponse(message);
+    QHostAddress peerAddress;
+    this->readDatagram(message.data(), message.size(), &peerAddress);
+
+    qDebug() << "RECEIVED MSG: " << message.data() << " from " << peerAddress.toString();
+    sendResponse(message, peerAddress);
 }
 
 void BroadcastHandler::sendAttachRequest() {
     QByteArray message = "1_ImLookingForSomeFun";
+    this->writeDatagram(message.data(), message.size(), QHostAddress::Broadcast, 5432);
+}
+
+void BroadcastHandler::sendServerDownInfo() {
+    QByteArray message = "2_ServerIsDown";
     this->writeDatagram(message.data(), message.size(), QHostAddress::Broadcast, 5432);
 }
 
@@ -117,4 +127,26 @@ void BroadcastHandler::setServerAddress(QHostAddress serverAddr) {
 void BroadcastHandler::resetServerAddress() {
     qDebug() << "RESET SERVER IN BROADCAST";
     serverAddress = QHostAddress("255.255.255.255");
+}
+
+
+void BroadcastHandler::electNewServer() {
+   if(!isServerElecting) {
+        electingServerTimer.start(1000);
+        serverCandidates = new std::set<QString>;
+        isServerElecting = true;
+        resetServerAddress();
+    }
+        sendOwnCandidature();
+
+}
+
+void BroadcastHandler::sendOwnCandidature() {
+    QByteArray message = "3_MeMeMeMeeee!!!";
+    this->writeDatagram(message.data(), message.size(), QHostAddress::Broadcast, 5432);
+}
+
+void BroadcastHandler::setNewServer() {
+    QString electedServer = *(serverCandidates->begin());
+    emit setNewServer(QHostAddress(electedServer));
 }

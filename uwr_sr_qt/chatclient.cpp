@@ -56,6 +56,7 @@ ChatClient::ChatClient(QWidget* parent,
     connect(widgetSearch, SIGNAL(clicked()), broadcast, SLOT(sendAttachRequest()));
     connect(widgetSearch, SIGNAL(clicked()), SLOT(setSearchFlag()));
     connect(broadcast, SIGNAL(serverOffer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
+    connect(broadcast, SIGNAL(setNewServer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
     connect(&timer, SIGNAL(timeout()), this, SLOT(keepAliveDoesntCameBack()));
 
 
@@ -126,8 +127,12 @@ void ChatClient::keepAliveDoesntCameBack() {
     if(keepAlives == 0)
         if(receivedKeepAlive)
             sendKeepAlive();
-        else
+        else {
+            qDebug() << "Server is down!";
             toggleConnection();
+            broadcast->sendServerDownInfo();
+            broadcast->electNewServer();
+        }
 }
 
 void ChatClient::receiveMessage() {

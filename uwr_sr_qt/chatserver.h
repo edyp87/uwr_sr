@@ -10,6 +10,8 @@
 #include <list>
 #include <QDebug>
 #include <QSharedPointer>
+#include <QTimer>
+#include <set> // QT nie posiada seta z sortowaniem :(
 
 class ChatServer : public QTcpServer {
     Q_OBJECT
@@ -38,20 +40,27 @@ public:
     BroadcastHandler(QObject * parent = 0);
     void setServerAddress(QHostAddress serverAddr);
     void resetServerAddress();
+    void electNewServer();
 
 public slots:
     void sendAttachRequest();
+    void sendServerDownInfo();
 
 private slots:
     void receivedBroadcast();
+    void setNewServer();
 
 private:
-    void sendResponse(QByteArray receivedMsg);
+    void sendResponse(QByteArray receivedMsg,  QHostAddress peerAddress);
     void sendOwnCandidature();
     QHostAddress serverAddress;
+    bool isServerElecting;
+    std::set<QString> * serverCandidates;
+    QTimer electingServerTimer;
 
 signals:
     void serverOffer(QHostAddress serverAddress);
+    void setNewServer(QHostAddress electedServer);
 };
 
 #endif // CHATSERVER_H
