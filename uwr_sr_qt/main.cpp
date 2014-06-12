@@ -1,6 +1,6 @@
 #include <QApplication>
 #include "chatclient.h"
-#include "../ChatServer/chatserver.h"
+#include "chatserver.h"
 
 int main(int argc, char *argv[]) {
 	QApplication a(argc, argv);

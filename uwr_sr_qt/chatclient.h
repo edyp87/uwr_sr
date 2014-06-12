@@ -16,7 +16,7 @@
 #include <QHostAddress>
 #include <QTimer>
 
-#include "../ChatServer/chatserver.h"
+#include "chatserver.h"
 
 class ChatClient : public QWidget {
 	Q_OBJECT
