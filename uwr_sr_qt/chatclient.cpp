@@ -48,21 +48,21 @@ ChatClient::ChatClient(QWidget* parent,
     socketHandle = new QTcpSocket(this);
     socketHandle->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
     socketBuffer->open(QIODevice::ReadWrite);
-    broadcast = new BroadcastHandler();
+    broadcast =   new BroadcastHandler();
 
-    connect(widgetMessage, SIGNAL(returnPressed()), SLOT(sendMessage()));
-    connect(widgetSend, SIGNAL(clicked()), SLOT(sendMessage()));
-    connect(widgetConn, SIGNAL(clicked()), SLOT(toggleConnection()));
-    connect(widgetSearch, SIGNAL(clicked()), broadcast, SLOT(sendAttachRequest()));
-    connect(widgetSearch, SIGNAL(clicked()), SLOT(setSearchFlag()));
-    connect(broadcast, SIGNAL(serverOffer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
-    connect(broadcast, SIGNAL(setNewServer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
-    connect(&timer, SIGNAL(timeout()), this, SLOT(keepAliveDoesntCameBack()));
+    connect(widgetMessage, SIGNAL(returnPressed()),                  SLOT(sendMessage()));
+    connect(widgetSend,    SIGNAL(clicked()),                        SLOT(sendMessage()));
+    connect(widgetConn,    SIGNAL(clicked()),                        SLOT(toggleConnection()));
+    connect(widgetSearch,  SIGNAL(clicked()), broadcast,             SLOT(sendAttachRequest()));
+    connect(widgetSearch,  SIGNAL(clicked()),                        SLOT(setSearchFlag()));
+    connect(broadcast,     SIGNAL(serverOffer(QHostAddress)),  this, SLOT(receiveServerOffer(QHostAddress)));
+    connect(broadcast,     SIGNAL(setNewServer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
+    connect(&timer,        SIGNAL(timeout()),                  this, SLOT(keepAliveDoesntCameBack()));
 
 
-    connect(socketHandle, SIGNAL(connected()), SLOT(setConnected()));
-    connect(socketHandle, SIGNAL(disconnected()), SLOT(setDisconnected()));
-    connect(socketHandle, SIGNAL(readyRead()), SLOT(receiveMessage()));
+    connect(socketHandle,  SIGNAL(connected()),                      SLOT(setConnected()));
+    connect(socketHandle,  SIGNAL(disconnected()),                   SLOT(setDisconnected()));
+    connect(socketHandle,  SIGNAL(readyRead()),                      SLOT(receiveMessage()));
 
 	setDisconnected();
 }
