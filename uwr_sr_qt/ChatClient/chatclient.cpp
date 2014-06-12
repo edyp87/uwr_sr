@@ -47,6 +47,7 @@ ChatClient::ChatClient(QSharedPointer<Peers> peersPtr,
 
     socketBuffer = new QBuffer(this);
     socketHandle = new QTcpSocket(this);
+    socketHandle->setSocketOption(QAbstractSocket::KeepAliveOption, 1);
     socketBuffer->open(QIODevice::ReadWrite);
     broadcast = new BroadcastHandler(peers);
 
@@ -56,7 +57,9 @@ ChatClient::ChatClient(QSharedPointer<Peers> peersPtr,
     connect(widgetSearch, SIGNAL(clicked()), broadcast, SLOT(sendAttachRequest()));
     connect(widgetSearch, SIGNAL(clicked()), SLOT(setSearchFlag()));
     connect(broadcast, SIGNAL(serverOffer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
+    connect(&timer, SIGNAL(timeout()), this, SLOT(toggleConnection()));
 
+    connect(socketHandle, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(handleServerError(QAbstractSocket::SocketError)));
     connect(socketHandle, SIGNAL(connected()), SLOT(setConnected()));
     connect(socketHandle, SIGNAL(disconnected()), SLOT(setDisconnected()));
     connect(socketHandle, SIGNAL(readyRead()), SLOT(receiveMessage()));
@@ -98,9 +101,11 @@ void ChatClient::toggleConnection() {
     if (socketHandle->state() == QAbstractSocket::UnconnectedState) {
         socketHandle->connectToHost(widgetServer->text(), widgetPort->value());
         wasSearchClicked = false;
+        sendKeepAlive();
     }
     else {
         socketHandle->disconnectFromHost();
+        timer.stop();
 	}
 }
 
@@ -109,12 +114,20 @@ void ChatClient::sendMessage() {
     widgetMessage->clear();
 }
 
+void ChatClient::sendKeepAlive() {
+    socketHandle->write("KEEP");
+    timer.start(2000);
+}
+
 void ChatClient::receiveMessage() {
     qint64 bytes = socketBuffer->write(socketHandle->readAll());
     socketBuffer->seek(socketBuffer->pos() - bytes);
     while (socketBuffer->canReadLine()) {
         QString line = socketBuffer->readLine();
-        widgetChat->append(line.simplified());
+        if(line == "ALIVE")
+            sendKeepAlive();
+        else
+            widgetChat->append(line.simplified());
     }
 }
 
@@ -128,4 +141,8 @@ void ChatClient::receiveServerOffer(QHostAddress serverAddress) {
 
 void ChatClient::setSearchFlag() {
     wasSearchClicked = true;
+}
+
+void ChatClient::handleServerError(QAbstractSocket::SocketError) {
+    qDebug() << "--------------------- SERVER ERROR ---------------------";
 }

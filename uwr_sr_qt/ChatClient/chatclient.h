@@ -14,6 +14,8 @@
 #include <QSpinBox>
 #include <QErrorMessage>
 #include <QHostAddress>
+#include <QTimer>
+
 #include "../ChatServer/chatserver.h"
 
 class ChatClient : public QWidget {
@@ -31,7 +33,8 @@ private slots:
 	void receiveMessage();
     void receiveServerOffer(QHostAddress serverAddress);
     void setSearchFlag();
-
+    void handleServerError(QAbstractSocket::SocketError);
+    void sendKeepAlive();
 private:
 	
 
@@ -52,6 +55,7 @@ private:
 
     BroadcastHandler* broadcast;
     QSharedPointer<Peers> peers;
+    QTimer          timer;
     bool            wasSearchClicked;
 };
 

@@ -56,9 +56,14 @@ void ChatServer::receiveMessage() {
 
     while (buffer->canReadLine()) {
 		QByteArray line = buffer->readLine();
-        foreach (QTcpSocket* connection, connectionList) {
-			connection->write(line);
-		}
+        if(line == "KEEP")
+            foreach (QTcpSocket* connection, connectionList) {
+                connection->write("ALIVE");
+            }
+        else
+            foreach (QTcpSocket* connection, connectionList) {
+                connection->write(line);
+            }
 	}
 }
 
