@@ -57,9 +57,9 @@ ChatClient::ChatClient(QSharedPointer<Peers> peersPtr,
     connect(widgetSearch, SIGNAL(clicked()), broadcast, SLOT(sendAttachRequest()));
     connect(widgetSearch, SIGNAL(clicked()), SLOT(setSearchFlag()));
     connect(broadcast, SIGNAL(serverOffer(QHostAddress)), this, SLOT(receiveServerOffer(QHostAddress)));
-    connect(&timer, SIGNAL(timeout()), this, SLOT(toggleConnection()));
+    connect(&timer, SIGNAL(timeout()), this, SLOT(keepAliveDoesntCameBack()));
 
-    connect(socketHandle, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(handleServerError(QAbstractSocket::SocketError)));
+
     connect(socketHandle, SIGNAL(connected()), SLOT(setConnected()));
     connect(socketHandle, SIGNAL(disconnected()), SLOT(setDisconnected()));
     connect(socketHandle, SIGNAL(readyRead()), SLOT(receiveMessage()));
@@ -115,8 +115,20 @@ void ChatClient::sendMessage() {
 }
 
 void ChatClient::sendKeepAlive() {
-    socketHandle->write("KEEP");
-    timer.start(2000);
+    socketHandle->write("KEEP\n");
+    receivedKeepAlive = false;
+    keepAlives = 2;
+    timer.start(1000);
+}
+
+void ChatClient::keepAliveDoesntCameBack() {
+    --keepAlives;
+
+    if(keepAlives == 0)
+        if(receivedKeepAlive)
+            sendKeepAlive();
+        else
+            toggleConnection();
 }
 
 void ChatClient::receiveMessage() {
@@ -124,8 +136,9 @@ void ChatClient::receiveMessage() {
     socketBuffer->seek(socketBuffer->pos() - bytes);
     while (socketBuffer->canReadLine()) {
         QString line = socketBuffer->readLine();
-        if(line == "ALIVE")
-            sendKeepAlive();
+        if(line == "ALIVE\n") {
+            receivedKeepAlive = true;
+        }
         else
             widgetChat->append(line.simplified());
     }

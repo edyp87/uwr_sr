@@ -35,6 +35,7 @@ private slots:
     void setSearchFlag();
     void handleServerError(QAbstractSocket::SocketError);
     void sendKeepAlive();
+    void keepAliveDoesntCameBack();
 private:
 	
 
@@ -56,6 +57,8 @@ private:
     BroadcastHandler* broadcast;
     QSharedPointer<Peers> peers;
     QTimer          timer;
+    qint8           keepAlives;
+    bool            receivedKeepAlive;
     bool            wasSearchClicked;
 };
 
