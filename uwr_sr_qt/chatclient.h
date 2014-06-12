@@ -59,6 +59,7 @@ private:
     qint8           keepAlives;
     bool            receivedKeepAlive;
     bool            wasSearchClicked;
+    bool startedLookingForServer;
 };
 
 #endif // ChatClient_H

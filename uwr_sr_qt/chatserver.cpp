@@ -147,6 +147,13 @@ void BroadcastHandler::sendOwnCandidature() {
 }
 
 void BroadcastHandler::setNewServer() {
-    QString electedServer = *(serverCandidates->begin());
-    emit setNewServer(QHostAddress(electedServer));
+    if(isServerElecting) {
+        qDebug() << "------------------ new elected server " <<  *(serverCandidates->begin());
+        //delete serverCandidates;
+        isServerElecting = false;
+        electingServerTimer.stop();
+        setServerAddress(QHostAddress(*(serverCandidates->begin())));
+        QString electedServer = *(serverCandidates->begin());
+        emit setNewServer(QHostAddress(electedServer));
+    }
 }

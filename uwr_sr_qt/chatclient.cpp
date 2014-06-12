@@ -4,7 +4,7 @@ static const quint16 defaultPort = 5432;
 
 ChatClient::ChatClient(QWidget* parent,
                        Qt::WindowFlags flags)
-    : QWidget(parent, flags), wasSearchClicked(false) {
+    : QWidget(parent, flags), wasSearchClicked(false), startedLookingForServer(false) {
     QVBoxLayout* mainSpace      = new QVBoxLayout(this);
     QGridLayout* topSpace       = new QGridLayout;
     QHBoxLayout* bottomSpace	= new QHBoxLayout;
@@ -131,7 +131,7 @@ void ChatClient::keepAliveDoesntCameBack() {
             qDebug() << "Server is down!";
             toggleConnection();
             broadcast->sendServerDownInfo();
-            broadcast->electNewServer();
+            startedLookingForServer = true;
         }
 }
 
@@ -150,7 +150,8 @@ void ChatClient::receiveMessage() {
 
 
 void ChatClient::receiveServerOffer(QHostAddress serverAddress) {
-    if(wasSearchClicked) {
+    if(wasSearchClicked || startedLookingForServer) {
+        startedLookingForServer = false;
         widgetServer->setText(serverAddress.toString());
         toggleConnection();
     }
