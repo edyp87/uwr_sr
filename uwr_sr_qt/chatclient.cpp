@@ -16,7 +16,9 @@ ChatClient::ChatClient(QWidget* parent,
     widgetSearch        = new QPushButton("Szukaj", this);
     widgetPort->setRange(1, 32767);
     widgetPort->setValue(defaultPort);
-    widgetServer->setText("localhost");
+
+    QString interfaceAddress = lookUpForIPAddress();
+    widgetServer->setText(interfaceAddress);
     topSpace->addWidget(widgetLabel , 0, 0);
     topSpace->addWidget(widgetServer, 0, 1);
     topSpace->addWidget(widgetPort  , 0, 2);
@@ -30,7 +32,7 @@ ChatClient::ChatClient(QWidget* parent,
 
     widgetChat	= new QTextEdit(this);
     widgetChat->setReadOnly(true);
-	
+
     widgetLabel     = new QLabel("Wiadomosc:", this);
     widgetMessage	= new QLineEdit(this);
     widgetSend      = new QPushButton("Wyslij", this);
@@ -65,10 +67,28 @@ ChatClient::ChatClient(QWidget* parent,
     connect(socketHandle, SIGNAL(readyRead()), SLOT(receiveMessage()));
 
 	setDisconnected();
+
 }
 
 ChatClient::~ChatClient() {
     socketBuffer->close();
+    // commented out because of bad order...
+//    delete mainSpace;
+//    delete topSpace;
+//    delete bottomSpace;
+//    delete widgetPort;
+//    delete widgetServer;
+//    delete widgetConn;
+//    delete widgetSearch;
+//    delete widgetLabel;
+//    delete widgetNick;
+//    delete widgetChat;
+//    delete widgetMessage;
+//    delete widgetSend;
+//    delete socketBuffer;
+//    delete socketHandle;
+//    delete broadcast;
+
 }
 
 void ChatClient::setConnected() {
@@ -85,7 +105,7 @@ void ChatClient::setConnected() {
 }
 
 void ChatClient::setDisconnected() {
-    widgetPort  ->setEnabled(true);
+    widgetPort  ->setEnabled(false);
     widgetServer->setEnabled(true);
     widgetNick  ->setEnabled(false);
     widgetMessage->setEnabled(false);
@@ -124,7 +144,7 @@ void ChatClient::sendKeepAlive() {
 void ChatClient::keepAliveDoesntCameBack() {
     --keepAlives;
 
-    if(keepAlives == 0)
+    if(keepAlives == 0) {
         if(receivedKeepAlive)
             sendKeepAlive();
         else {
@@ -133,6 +153,7 @@ void ChatClient::keepAliveDoesntCameBack() {
             broadcast->sendServerDownInfo();
             startedLookingForServer = true;
         }
+    }
 }
 
 void ChatClient::receiveMessage() {
@@ -163,4 +184,20 @@ void ChatClient::setSearchFlag() {
 
 void ChatClient::handleServerError(QAbstractSocket::SocketError) {
     qDebug() << "--------------------- SERVER ERROR ---------------------";
+}
+
+QString ChatClient::lookUpForIPAddress() {
+
+    QList<QNetworkInterface> interfaces = QNetworkInterface::allInterfaces();
+    QString toReturnAddress = "127.0.0.1";
+    foreach(const QNetworkInterface & interface, interfaces) {
+        if (interface.flags() & QNetworkInterface::IsUp) {
+            foreach(const QNetworkAddressEntry & address, interface.addressEntries()) {
+                if(address.ip().toIPv4Address() != 0 && address.ip().toIPv4Address() != 2130706433)
+                toReturnAddress = address.ip().toString();
+
+            }
+        }
+    }
+    return toReturnAddress;
 }

@@ -15,7 +15,7 @@
 #include <QErrorMessage>
 #include <QHostAddress>
 #include <QTimer>
-
+#include <QNetworkInterface>
 #include "chatserver.h"
 
 class ChatClient : public QWidget {
@@ -37,6 +37,8 @@ private slots:
     void sendKeepAlive();
     void keepAliveDoesntCameBack();
 private:
+
+    QString lookUpForIPAddress();
 	
 
     QBuffer*		socketBuffer;
